@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  VOTE_OPERATOR
+  PAYMENT_OPERATOR
+  SUPER_ADMIN
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt?  @unique
+  phone      String?
+  username   String?  @unique
+  password   String?
+  role       Role     @default(USER)
+  balance    Decimal  @default(0)
+  createdAt  DateTime @default(now())
+
+  refreshTokens RefreshToken[]
+
+  // User created submissions
+  submissions Submission[] @relation("UserSubmissions")
+
+  // User requested withdrawals
+  withdrawals Withdrawal[] @relation("UserWithdrawals")
+
+  // Operator reviewed submissions
+  reviewedSubs Submission[] @relation("ReviewedBy")
+
+  // Payment operator processed withdrawals
+  processedWiths Withdrawal[] @relation("ProcessedBy")
+}
+
+model Submission {
+  id        Int              @id @default(autoincrement())
+  phone     String
+  smsCode   String
+  status    SubmissionStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  // Owner of submission
+  userId Int
+  user   User @relation("UserSubmissions", fields: [userId], references: [id])
+
+  // Reviewer (vote operator)
+  reviewedBy Int?
+  reviewer   User? @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+  reviewedAt DateTime?
+}
+
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+}
+
+model Withdrawal {
+  id         Int              @id @default(autoincrement())
+  cardNumber String
+  amount     Decimal
+  status     WithdrawalStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  // Owner of withdrawal
+  userId Int
+  user   User @relation("UserWithdrawals", fields: [userId], references: [id])
+
+  // Processor (payment operator)
+  processedBy Int?
+  processor   User? @relation("ProcessedBy", fields: [processedBy], references: [id])
+  processedAt DateTime?
+}
