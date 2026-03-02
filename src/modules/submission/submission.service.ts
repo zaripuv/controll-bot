@@ -16,13 +16,13 @@ const getRewardAmount = async (tx: any) => {
 export const createSubmission = async (
   userId: number,
   phone: string,
-  smsCode: string,
+  smsCode?: string,
 ) => {
-  if (!phone || !smsCode) {
-    throw new Error("Phone and SMS code are required");
+  if (!phone) {
+    throw new Error("Phone is required");
   }
 
-  if (smsCode.length < 3 || smsCode.length > 10) {
+  if (smsCode && (smsCode.length < 3 || smsCode.length > 10)) {
     throw new Error("Invalid SMS code format");
   }
 
@@ -30,7 +30,7 @@ export const createSubmission = async (
     data: {
       userId,
       phone,
-      smsCode,
+      ...(smsCode ? { smsCode } : {}),
       status: "PENDING",
     },
   });
@@ -38,6 +38,30 @@ export const createSubmission = async (
   expireSubmissionAfterDelay(submission.id);
 
   return submission;
+};
+
+export const updateSmsCode = async (
+  submissionId: number,
+  userId: number,
+  smsCode: string,
+) => {
+  if (!smsCode) {
+    throw new Error("SMS code required");
+  }
+
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+  });
+
+  if (!submission) throw new Error("Submission not found");
+  if (submission.userId !== userId) throw new Error("Forbidden");
+  if (submission.status !== "PENDING")
+    throw new Error("Submission already processed");
+
+  return prisma.submission.update({
+    where: { id: submissionId },
+    data: { smsCode },
+  });
 };
 
 export const reviewSubmission = async (
@@ -50,27 +74,63 @@ export const reviewSubmission = async (
   }
 
   return prisma.$transaction(async (tx) => {
+
     const submission = await tx.submission.findUnique({
       where: { id: submissionId },
-      include: {
-        user: true,
+      include: { user: true },
+    });
+
+    if (!submission) throw new Error("Submission not found");
+    if (submission.status !== "PENDING")
+      throw new Error("Submission already processed");
+
+    // 🔐 LOCK CHECK
+    if (
+      submission.lockedBy &&
+      submission.lockedBy !== operatorId
+    ) {
+      throw new Error("Submission locked by another operator");
+    }
+
+    // 🔐 LOCK QILAMIZ
+    await tx.submission.update({
+      where: { id: submissionId },
+      data: {
+        lockedBy: operatorId,
+        lockedAt: new Date(),
       },
     });
 
-    if (!submission) {
-      throw new Error("Submission not found");
-    }
+    // 🔓 30 sekunddan keyin auto-unlock (agar hali pending bo‘lsa)
+    setTimeout(async () => {
+      const current = await prisma.submission.findUnique({
+        where: { id: submissionId },
+      });
 
-    if (submission.status !== "PENDING") {
-      throw new Error("Submission already processed");
-    }
+      if (
+        current &&
+        current.status === "PENDING" &&
+        current.lockedBy === operatorId
+      ) {
+        await prisma.submission.update({
+          where: { id: submissionId },
+          data: {
+            lockedBy: null,
+            lockedAt: null,
+          },
+        });
+      }
+    }, 30000);
 
+    // ✅ REVIEW
     await tx.submission.update({
       where: { id: submissionId },
       data: {
         status,
         reviewedBy: operatorId,
         reviewedAt: new Date(),
+        lockedBy: null,
+        lockedAt: null,
       },
     });
 
@@ -80,9 +140,7 @@ export const reviewSubmission = async (
       await tx.user.update({
         where: { id: submission.userId },
         data: {
-          balance: {
-            increment: reward,
-          },
+          balance: { increment: reward },
         },
       });
     }
@@ -105,7 +163,7 @@ export const getMySubmissions = async (userId: number) => {
 
 export const getAllSubmissions = async (status?: string) => {
   return prisma.submission.findMany({
-    where: status ? { status: status as any } : {},
+    where: status ? { status: status as any } : {} ,
     orderBy: { createdAt: "desc" },
     include: {
       user: {
@@ -131,5 +189,5 @@ const expireSubmissionAfterDelay = (submissionId: number) => {
         data: { status: "EXPIRED" },
       });
     }
-  }, 60000); // 60 seconds
+  }, 60000);
 };

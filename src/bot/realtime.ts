@@ -1,0 +1,1 @@
+export const onlineOperators = new Map<number, string>();

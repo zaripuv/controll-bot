@@ -3,7 +3,8 @@ import {
   create,
   review,
   mySubmissions,
-  list
+  list,
+  updateSms,
 } from "./submission.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
 import { roleMiddleware } from "../../middlewares/role.middleware";
@@ -16,6 +17,13 @@ router.post(
   authMiddleware,
   roleMiddleware("USER"),
   create
+);
+
+router.patch(
+  "/:id/sms",
+  authMiddleware,
+  roleMiddleware("USER"),
+  updateSms
 );
 
 // USER own list
