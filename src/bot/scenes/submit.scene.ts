@@ -1,7 +1,7 @@
 import { Scenes, Markup } from "telegraf";
 import { api } from "../api";
 import { BotContext } from "../../types";
-import { onlineOperators } from "../realtime"; // ✅ qo‘shildi
+import { onlineVoteOperators } from "../realtime";
 
 interface SubmitState extends Scenes.WizardSessionData {
   phone?: string;
@@ -36,7 +36,7 @@ export const submitScene = new Scenes.WizardScene<BotContext>(
       (ctx.wizard.state as SubmitState).submissionId = data.id;
 
       // ✅ REALTIME PUSH — telefon keldi
-      for (const telegramId of onlineOperators.values()) {
+      for (const telegramId of onlineVoteOperators.values()) {
         await ctx.telegram.sendMessage(
           telegramId,
           `📞 Yangi telefon:\n${phone}\n⏳ SMS kutilmoqda`
@@ -71,7 +71,7 @@ export const submitScene = new Scenes.WizardScene<BotContext>(
       );
 
       // ✅ REALTIME PUSH — SMS keldi (Approve/Reject bilan)
-      for (const telegramId of onlineOperators.values()) {
+      for (const telegramId of onlineVoteOperators.values()) {
         await ctx.telegram.sendMessage(
           telegramId,
           `📞 ${phone}\n🔐 ${smsCode}`,

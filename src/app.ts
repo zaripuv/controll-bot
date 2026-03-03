@@ -8,6 +8,7 @@ import { roleMiddleware } from "./middlewares/role.middleware";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import submissionRoutes from "./modules/submission/submission.routes";
 import withdrawalRoutes from "./modules/withdrawal/withdrawal.routes";
+import userRoutes from "./modules/user/user.routes";
 import statsRoutes from "./modules/stats/stats.routes";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 
 /* ROUTES */
 app.use(authRoutes);
+app.use("/users", userRoutes);
 app.use("/submission", submissionRoutes);
 app.use("/withdrawal", withdrawalRoutes);
 app.use("/stats", statsRoutes);

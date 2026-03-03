@@ -2,6 +2,11 @@ import "dotenv/config";
 import app from "./app";
 import prisma from "./config/database";
 
+
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 const PORT = process.env.PORT || 5000;
 
 const seedSystemConfig = async () => {

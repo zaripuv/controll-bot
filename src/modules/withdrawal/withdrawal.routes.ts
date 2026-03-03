@@ -6,7 +6,8 @@ import {
   approve,
   myWithdrawals,
   list,
-  cancel
+  cancel,
+  lock
 } from "./withdrawal.controller";
 
 const router = express.Router();
@@ -49,6 +50,13 @@ router.patch(
   authMiddleware,
   roleMiddleware("PAYMENT_OPERATOR"),
   approve
+);
+
+router.patch(
+  "/:id/lock",
+  authMiddleware,
+  roleMiddleware("PAYMENT_OPERATOR"),
+  lock
 );
 
 export default router;

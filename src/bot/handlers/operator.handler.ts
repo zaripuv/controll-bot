@@ -23,7 +23,7 @@ export const registerOperatorHandlers = (bot: any) => {
 
       for (const sub of data) {
 
-        // ✅ Agar SMS hali kelmagan bo‘lsa
+        // Agar SMS hali kelmagan bo‘lsa
         if (!sub.smsCode) {
           await ctx.reply(
             `📞 ${sub.phone}\n⏳ SMS kutilmoqda`
@@ -31,7 +31,7 @@ export const registerOperatorHandlers = (bot: any) => {
           continue;
         }
 
-        // ✅ SMS kelgan bo‘lsa approve/reject chiqadi
+        // SMS kelgan bo‘lsa approve/reject chiqadi
         await ctx.reply(
           `📞 ${sub.phone}\n🔐 ${sub.smsCode}`,
           Markup.inlineKeyboard([

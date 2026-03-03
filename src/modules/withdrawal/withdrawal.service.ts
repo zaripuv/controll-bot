@@ -4,7 +4,7 @@ import { Prisma, WithdrawalStatus } from "@prisma/client";
 export const createWithdrawalService = async (
   userId: number,
   cardNumber: string,
-  amount: number
+  amount: number,
 ) => {
   if (!cardNumber || !amount) {
     throw new Error("cardNumber and amount required");
@@ -17,14 +17,28 @@ export const createWithdrawalService = async (
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: userId }
+    where: { id: userId },
   });
 
   if (!user) {
     throw new Error("User not found");
   }
 
-  if (user.balance.lessThan(withdrawalAmount)) {
+  // PENDING withdrawal summasini hisoblaymiz
+  const pending = await prisma.withdrawal.aggregate({
+    where: {
+      userId,
+      status: "PENDING",
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+
+  const pendingSum = pending._sum.amount ?? new Prisma.Decimal(0);
+  const availableBalance = user.balance.minus(pendingSum);
+
+  if (availableBalance.lessThan(withdrawalAmount)) {
     throw new Error("Insufficient balance");
   }
 
@@ -32,19 +46,22 @@ export const createWithdrawalService = async (
     data: {
       cardNumber,
       amount: withdrawalAmount,
-      userId
-    }
+      userId,
+      status: "PENDING",
+    },
   });
 };
 
+
+
 export const approveWithdrawalService = async (
   withdrawalId: number,
-  operatorId: number
+  operatorId: number,
 ) => {
   return prisma.$transaction(async (tx) => {
-
     const withdrawal = await tx.withdrawal.findUnique({
-      where: { id: withdrawalId }
+      where: { id: withdrawalId },
+      include: { user: true },
     });
 
     if (!withdrawal) {
@@ -55,46 +72,76 @@ export const approveWithdrawalService = async (
       throw new Error("Withdrawal already processed");
     }
 
-    const user = await tx.user.findUnique({
-      where: { id: withdrawal.userId }
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = withdrawal.user;
 
     if (user.balance.lessThan(withdrawal.amount)) {
       throw new Error("User balance insufficient");
     }
 
+    // Balance kamaytiramiz
     await tx.user.update({
       where: { id: user.id },
       data: {
         balance: {
-          decrement: withdrawal.amount
-        }
-      }
+          decrement: withdrawal.amount,
+        },
+      },
     });
 
-    await tx.withdrawal.update({
+    // Balance history
+    await tx.balanceHistory.create({
+      data: {
+        userId: user.id,
+        amount: withdrawal.amount.mul(-1),
+        type: "WITHDRAWAL",
+        reference: `withdrawal:${withdrawalId}`,
+      },
+    });
+
+    // Withdrawal update
+    const updated = await tx.withdrawal.update({
       where: { id: withdrawalId },
       data: {
         status: "PAID",
         processedBy: operatorId,
-        processedAt: new Date()
-      }
+        processedAt: new Date(),
+      },
     });
 
-    return { message: "Withdrawal approved and balance deducted" };
+    // Action log
+    await tx.actionLog.create({
+      data: {
+        userId: operatorId,
+        action: "PAY_WITHDRAWAL",
+        entity: "WITHDRAWAL",
+        entityId: withdrawalId,
+        meta: JSON.stringify({
+          targetUserId: user.id,
+          amount: withdrawal.amount.toString(),
+        }),
+      },
+    });
+
+    return {
+      message: "Withdrawal approved and balance deducted",
+      telegramId: user.telegramId
+        ? user.telegramId.toString()
+        : null,
+      amount: withdrawal.amount.toString(),
+    };
   });
 };
+
+
 
 export const getMyWithdrawals = async (userId: number) => {
   return prisma.withdrawal.findMany({
     where: { userId },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
 };
+
+
 
 export const getAllWithdrawals = async (status?: WithdrawalStatus) => {
   return prisma.withdrawal.findMany({
@@ -105,19 +152,20 @@ export const getAllWithdrawals = async (status?: WithdrawalStatus) => {
         select: {
           id: true,
           username: true,
-          phone: true
-        }
-      }
-    }
+          phone: true,
+          telegramId: true,
+        },
+      },
+    },
   });
 };
 
 export const cancelWithdrawalService = async (
   withdrawalId: number,
-  userId: number
+  userId: number,
 ) => {
   const withdrawal = await prisma.withdrawal.findUnique({
-    where: { id: withdrawalId }
+    where: { id: withdrawalId },
   });
 
   if (!withdrawal) {
@@ -132,8 +180,52 @@ export const cancelWithdrawalService = async (
     throw new Error("Cannot cancel processed withdrawal");
   }
 
+  const updated = await prisma.withdrawal.update({
+    where: { id: withdrawalId },
+    data: { status: "CANCELLED" },
+  });
+
+  await prisma.actionLog.create({
+    data: {
+      userId,
+      action: "CANCEL_WITHDRAWAL",
+      entity: "WITHDRAWAL",
+      entityId: withdrawalId,
+    },
+  });
+
+  return updated;
+};
+
+export const lockWithdrawalService = async (
+  withdrawalId: number,
+  operatorId: number
+) => {
+  const withdrawal = await prisma.withdrawal.findUnique({
+    where: { id: withdrawalId },
+  });
+
+  if (!withdrawal) {
+    throw new Error("Withdrawal not found");
+  }
+
+  if (withdrawal.status !== "PENDING") {
+    throw new Error("Withdrawal already processed");
+  }
+
+  // Agar lock bor bo‘lsa va 30 sekund o‘tmagan bo‘lsa
+  if (withdrawal.lockedAt) {
+    const diff = Date.now() - withdrawal.lockedAt.getTime();
+    if (diff < 30000 && withdrawal.lockedBy !== operatorId) {
+      throw new Error("Withdrawal locked by another operator");
+    }
+  }
+
   return prisma.withdrawal.update({
     where: { id: withdrawalId },
-    data: { status: "CANCELLED" }
+    data: {
+      lockedBy: operatorId,
+      lockedAt: new Date(),
+    },
   });
 };

@@ -5,7 +5,8 @@ import {
   approveWithdrawalService,
   getMyWithdrawals,
   getAllWithdrawals,
-  cancelWithdrawalService
+  cancelWithdrawalService,
+  lockWithdrawalService,
 } from "./withdrawal.service";
 
 export const create = asyncHandler(async (req: any, res: Response) => {
@@ -49,6 +50,18 @@ export const cancel = asyncHandler(async (req: any, res: Response) => {
   const result = await cancelWithdrawalService(
     withdrawalId,
     req.user.id
+  );
+
+  res.json(result);
+});
+
+export const lock = asyncHandler(async (req: any, res: Response) => {
+  const withdrawalId = Number(req.params.id);
+  const operatorId = req.user.id;
+
+  const result = await lockWithdrawalService(
+    withdrawalId,
+    operatorId
   );
 
   res.json(result);

@@ -1,5 +1,5 @@
 import prisma from "../../config/database";
-import { SubmissionStatus } from "@prisma/client";
+import { SubmissionStatus, Prisma } from "@prisma/client";
 
 const getRewardAmount = async (tx: any) => {
   const config = await tx.systemConfig.findUnique({
@@ -74,7 +74,6 @@ export const reviewSubmission = async (
   }
 
   return prisma.$transaction(async (tx) => {
-
     const submission = await tx.submission.findUnique({
       where: { id: submissionId },
       include: { user: true },
@@ -84,15 +83,10 @@ export const reviewSubmission = async (
     if (submission.status !== "PENDING")
       throw new Error("Submission already processed");
 
-    // 🔐 LOCK CHECK
-    if (
-      submission.lockedBy &&
-      submission.lockedBy !== operatorId
-    ) {
+    if (submission.lockedBy && submission.lockedBy !== operatorId) {
       throw new Error("Submission locked by another operator");
     }
 
-    // 🔐 LOCK QILAMIZ
     await tx.submission.update({
       where: { id: submissionId },
       data: {
@@ -101,7 +95,20 @@ export const reviewSubmission = async (
       },
     });
 
-    // 🔓 30 sekunddan keyin auto-unlock (agar hali pending bo‘lsa)
+    // ACTION LOG
+    await tx.actionLog.create({
+      data: {
+        userId: operatorId,
+        action:
+          status === "APPROVED" ? "APPROVE_SUBMISSION" : "REJECT_SUBMISSION",
+        entity: "SUBMISSION",
+        entityId: submissionId,
+        meta: JSON.stringify({
+          targetUserId: submission.userId,
+        }),
+      },
+    });
+
     setTimeout(async () => {
       const current = await prisma.submission.findUnique({
         where: { id: submissionId },
@@ -122,7 +129,6 @@ export const reviewSubmission = async (
       }
     }, 30000);
 
-    // ✅ REVIEW
     await tx.submission.update({
       where: { id: submissionId },
       data: {
@@ -134,13 +140,36 @@ export const reviewSubmission = async (
       },
     });
 
+    await tx.actionLog.create({
+      data: {
+        userId: operatorId,
+        action:
+          status === "APPROVED" ? "APPROVE_SUBMISSION" : "REJECT_SUBMISSION",
+        entity: "SUBMISSION",
+        entityId: submissionId,
+        meta: JSON.stringify({
+          targetUserId: submission.userId,
+        }),
+      },
+    });
+
     if (status === "APPROVED") {
       const reward = await getRewardAmount(tx);
+      const rewardDecimal = new Prisma.Decimal(reward);
 
       await tx.user.update({
         where: { id: submission.userId },
         data: {
-          balance: { increment: reward },
+          balance: { increment: rewardDecimal },
+        },
+      });
+
+      await tx.balanceHistory.create({
+        data: {
+          userId: submission.userId,
+          amount: rewardDecimal,
+          type: "REWARD",
+          reference: `submission:${submissionId}`,
         },
       });
     }
@@ -163,7 +192,7 @@ export const getMySubmissions = async (userId: number) => {
 
 export const getAllSubmissions = async (status?: string) => {
   return prisma.submission.findMany({
-    where: status ? { status: status as any } : {} ,
+    where: status ? { status: status as any } : {},
     orderBy: { createdAt: "desc" },
     include: {
       user: {
