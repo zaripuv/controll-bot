@@ -5,5 +5,7 @@ export const userKeyboard = () => {
     ["📝 Submit"],
     ["💰 Balance"],
     ["💳 Withdraw"],
+    ["👥 Invite Friends"],
+     ["📊 Referral Stats"]
   ]).resize();
 };

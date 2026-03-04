@@ -10,13 +10,19 @@ import {
   lock
 } from "./withdrawal.controller";
 
+import { validate } from "../../middlewares/validate.middleware";
+import { createWithdrawalSchema } from "../../validators/withdrawal.schema";
+import { criticalRateLimit } from "../../middlewares/rateLimit.middleware";
+
 const router = express.Router();
 
 // USER create
 router.post(
   "/",
   authMiddleware,
+  criticalRateLimit,
   roleMiddleware("USER"),
+  validate(createWithdrawalSchema),
   create
 );
 

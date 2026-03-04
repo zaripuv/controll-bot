@@ -46,6 +46,11 @@ model User {
   balance    Decimal  @default(0)
   createdAt  DateTime @default(now())
 
+  referralCode String @unique
+  referredBy   Int?
+  referrer     User?   @relation("UserReferrals", fields: [referredBy], references: [id])
+  referrals    User[]  @relation("UserReferrals")
+
   refreshTokens RefreshToken[]
   balanceHistory BalanceHistory[]
   actionLogs ActionLog[]
@@ -61,6 +66,31 @@ model User {
 
   // Payment operator processed withdrawals
   processedWiths Withdrawal[] @relation("ProcessedBy")
+  
+  // Projects assigned to vote operator
+  voteProjects Project[] @relation("VoteProject")
+
+  // Projects assigned to payment operator
+  paymentProjects Project[] @relation("PaymentProject")
+}
+
+model Project {
+  id Int @id @default(autoincrement())
+
+  name String
+  link String
+
+  reward Decimal
+
+  createdAt DateTime @default(now())
+
+  voteOperatorId Int?
+  voteOperator User? @relation("VoteProject", fields:[voteOperatorId], references:[id])
+
+  paymentOperatorId Int?
+  paymentOperator User? @relation("PaymentProject", fields:[paymentOperatorId], references:[id])
+
+  submissions Submission[]
 }
 
 model Submission {
@@ -73,6 +103,9 @@ model Submission {
   // Owner of submission
   userId Int
   user   User @relation("UserSubmissions", fields: [userId], references: [id])
+
+  projectId Int
+  project Project @relation(fields:[projectId], references:[id])
 
   // Reviewer (vote operator)
   reviewedBy Int?

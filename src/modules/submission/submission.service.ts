@@ -1,17 +1,6 @@
 import prisma from "../../config/database";
 import { SubmissionStatus, Prisma } from "@prisma/client";
-
-const getRewardAmount = async (tx: any) => {
-  const config = await tx.systemConfig.findUnique({
-    where: { key: "reward" },
-  });
-
-  if (!config) {
-    throw new Error("Reward config not found");
-  }
-
-  return Number(config.value);
-};
+import { AppError } from "../../shared/appError";
 
 export const createSubmission = async (
   userId: number,
@@ -19,17 +8,26 @@ export const createSubmission = async (
   smsCode?: string,
 ) => {
   if (!phone) {
-    throw new Error("Phone is required");
+    throw new AppError("Phone is required", 400);
   }
 
   if (smsCode && (smsCode.length < 3 || smsCode.length > 10)) {
-    throw new Error("Invalid SMS code format");
+    throw new AppError("Invalid SMS code format", 400);
+  }
+
+  const project = await prisma.project.findFirst({
+    orderBy: { id: "desc" },
+  });
+
+  if (!project) {
+    throw new AppError("No active project found", 500);
   }
 
   const submission = await prisma.submission.create({
     data: {
       userId,
       phone,
+      projectId: project.id,
       ...(smsCode ? { smsCode } : {}),
       status: "PENDING",
     },
@@ -46,17 +44,24 @@ export const updateSmsCode = async (
   smsCode: string,
 ) => {
   if (!smsCode) {
-    throw new Error("SMS code required");
+    throw new AppError("SMS code required", 400);
   }
 
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
   });
 
-  if (!submission) throw new Error("Submission not found");
-  if (submission.userId !== userId) throw new Error("Forbidden");
-  if (submission.status !== "PENDING")
-    throw new Error("Submission already processed");
+  if (!submission) {
+    throw new AppError("Submission not found", 404);
+  }
+
+  if (submission.userId !== userId) {
+    throw new AppError("Forbidden", 403);
+  }
+
+  if (submission.status !== "PENDING") {
+    throw new AppError("Submission already processed", 400);
+  }
 
   return prisma.submission.update({
     where: { id: submissionId },
@@ -70,21 +75,28 @@ export const reviewSubmission = async (
   status: SubmissionStatus,
 ) => {
   if (!["APPROVED", "REJECTED"].includes(status)) {
-    throw new Error("Invalid status");
+    throw new AppError("Invalid status", 400);
   }
 
   return prisma.$transaction(async (tx) => {
     const submission = await tx.submission.findUnique({
       where: { id: submissionId },
-      include: { user: true },
+      include: {
+        user: true,
+        project: true,
+      },
     });
 
-    if (!submission) throw new Error("Submission not found");
-    if (submission.status !== "PENDING")
-      throw new Error("Submission already processed");
+    if (!submission) {
+      throw new AppError("Submission not found", 404);
+    }
+
+    if (submission.status !== "PENDING") {
+      throw new AppError("Submission already processed", 400);
+    }
 
     if (submission.lockedBy && submission.lockedBy !== operatorId) {
-      throw new Error("Submission locked by another operator");
+      throw new AppError("Submission locked by another operator", 409);
     }
 
     await tx.submission.update({
@@ -92,20 +104,6 @@ export const reviewSubmission = async (
       data: {
         lockedBy: operatorId,
         lockedAt: new Date(),
-      },
-    });
-
-    // ACTION LOG
-    await tx.actionLog.create({
-      data: {
-        userId: operatorId,
-        action:
-          status === "APPROVED" ? "APPROVE_SUBMISSION" : "REJECT_SUBMISSION",
-        entity: "SUBMISSION",
-        entityId: submissionId,
-        meta: JSON.stringify({
-          targetUserId: submission.userId,
-        }),
       },
     });
 
@@ -154,8 +152,7 @@ export const reviewSubmission = async (
     });
 
     if (status === "APPROVED") {
-      const reward = await getRewardAmount(tx);
-      const rewardDecimal = new Prisma.Decimal(reward);
+      const rewardDecimal = new Prisma.Decimal(submission.project.reward);
 
       await tx.user.update({
         where: { id: submission.userId },
@@ -172,6 +169,26 @@ export const reviewSubmission = async (
           reference: `submission:${submissionId}`,
         },
       });
+
+      if (submission.user.referredBy) {
+        const referralReward = new Prisma.Decimal(2000); // referral bonus
+
+        await tx.user.update({
+          where: { id: submission.user.referredBy },
+          data: {
+            balance: { increment: referralReward },
+          },
+        });
+
+        await tx.balanceHistory.create({
+          data: {
+            userId: submission.user.referredBy,
+            amount: referralReward,
+            type: "REFERRAL",
+            reference: `referral:${submission.userId}`,
+          },
+        });
+      }
     }
 
     return {

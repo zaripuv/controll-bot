@@ -8,20 +8,26 @@ import { roleMiddleware } from "./middlewares/role.middleware";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import submissionRoutes from "./modules/submission/submission.routes";
 import withdrawalRoutes from "./modules/withdrawal/withdrawal.routes";
+import projectRoutes from "./modules/project/project.routes";
 import userRoutes from "./modules/user/user.routes";
 import statsRoutes from "./modules/stats/stats.routes";
+import { globalRateLimit } from "./middlewares/rateLimit.middleware";
+import { httpLogger } from "./middlewares/logger.middleware";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(httpLogger);
 
 /* ROUTES */
 app.use(authRoutes);
+app.use(globalRateLimit);
 app.use("/users", userRoutes);
 app.use("/submission", submissionRoutes);
 app.use("/withdrawal", withdrawalRoutes);
 app.use("/stats", statsRoutes);
+app.use("/projects", projectRoutes);
 
 /* HEALTH */
 app.get("/health", (_, res) => {
@@ -51,11 +57,23 @@ app.post("/create-super-admin", async (_, res) => {
 
     const hashedPassword = await bcrypt.hash("123456", 10);
 
+    const generateReferralCode = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
+
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      return code;
+    };
+
     const user = await prisma.user.create({
       data: {
         username: "superadmin",
         password: hashedPassword,
         role: "SUPER_ADMIN",
+        referralCode: generateReferralCode(),
       },
     });
 
@@ -68,7 +86,7 @@ app.post("/create-super-admin", async (_, res) => {
 app.get("/profile", authMiddleware, async (req: any, res) => {
   res.json({
     message: "Protected route ishladi",
-    user: req.user
+    user: req.user,
   });
 });
 
@@ -79,11 +97,10 @@ app.get(
   (req, res) => {
     res.json({
       message: "Admin only route",
-      secretStats: "Only SUPER_ADMIN can see this"
+      secretStats: "Only SUPER_ADMIN can see this",
     });
-  }
+  },
 );
-
 
 app.use(errorMiddleware);
 

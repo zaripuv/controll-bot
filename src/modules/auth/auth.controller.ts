@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
-import { loginUser, refreshAccessToken, telegramLogin, logoutUser } from "./auth.service";
+import {
+  loginUser,
+  refreshAccessToken,
+  telegramLogin,
+  logoutUser,
+} from "./auth.service";
 import { asyncHandler } from "../../shared/asyncHandler";
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
@@ -18,17 +23,19 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   res.json(tokens);
 });
 
-export const telegramAuth = asyncHandler(async (req: Request, res: Response) => {
-  const { telegramId } = req.body;
+export const telegramAuth = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { telegramId, referralCode } = req.body;
 
-  if (!telegramId) {
-    return res.status(400).json({ message: "telegramId required" });
-  }
+    if (!telegramId) {
+      return res.status(400).json({ message: "telegramId required" });
+    }
 
-  const tokens = await telegramLogin(telegramId);
+    const tokens = await telegramLogin(telegramId, referralCode);
 
-  res.json(tokens);
-});
+    res.json(tokens);
+  },
+);
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
   const { refreshToken } = req.body;

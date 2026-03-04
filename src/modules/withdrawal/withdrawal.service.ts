@@ -1,5 +1,6 @@
 import prisma from "../../config/database";
 import { Prisma, WithdrawalStatus } from "@prisma/client";
+import { AppError } from "../../shared/appError";
 
 export const createWithdrawalService = async (
   userId: number,
@@ -7,13 +8,13 @@ export const createWithdrawalService = async (
   amount: number,
 ) => {
   if (!cardNumber || !amount) {
-    throw new Error("cardNumber and amount required");
+    throw new AppError("cardNumber and amount required", 400);
   }
 
   const withdrawalAmount = new Prisma.Decimal(amount);
 
   if (withdrawalAmount.lte(0)) {
-    throw new Error("Amount must be greater than 0");
+    throw new AppError("Amount must be greater than 0", 400);
   }
 
   const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export const createWithdrawalService = async (
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new AppError("User not found", 404);
   }
 
   // PENDING withdrawal summasini hisoblaymiz
@@ -39,7 +40,7 @@ export const createWithdrawalService = async (
   const availableBalance = user.balance.minus(pendingSum);
 
   if (availableBalance.lessThan(withdrawalAmount)) {
-    throw new Error("Insufficient balance");
+    throw new AppError("Insufficient balance", 400);
   }
 
   return prisma.withdrawal.create({
@@ -52,8 +53,6 @@ export const createWithdrawalService = async (
   });
 };
 
-
-
 export const approveWithdrawalService = async (
   withdrawalId: number,
   operatorId: number,
@@ -65,17 +64,17 @@ export const approveWithdrawalService = async (
     });
 
     if (!withdrawal) {
-      throw new Error("Withdrawal not found");
+      throw new AppError("Withdrawal not found", 404);
     }
 
     if (withdrawal.status !== "PENDING") {
-      throw new Error("Withdrawal already processed");
+      throw new AppError("Withdrawal already processed", 400);
     }
 
     const user = withdrawal.user;
 
     if (user.balance.lessThan(withdrawal.amount)) {
-      throw new Error("User balance insufficient");
+      throw new AppError("User balance insufficient", 400);
     }
 
     // Balance kamaytiramiz
@@ -124,15 +123,11 @@ export const approveWithdrawalService = async (
 
     return {
       message: "Withdrawal approved and balance deducted",
-      telegramId: user.telegramId
-        ? user.telegramId.toString()
-        : null,
+      telegramId: user.telegramId ? user.telegramId.toString() : null,
       amount: withdrawal.amount.toString(),
     };
   });
 };
-
-
 
 export const getMyWithdrawals = async (userId: number) => {
   return prisma.withdrawal.findMany({
@@ -140,8 +135,6 @@ export const getMyWithdrawals = async (userId: number) => {
     orderBy: { createdAt: "desc" },
   });
 };
-
-
 
 export const getAllWithdrawals = async (status?: WithdrawalStatus) => {
   return prisma.withdrawal.findMany({
@@ -169,15 +162,15 @@ export const cancelWithdrawalService = async (
   });
 
   if (!withdrawal) {
-    throw new Error("Withdrawal not found");
+    throw new AppError("Withdrawal not found", 404);
   }
 
   if (withdrawal.userId !== userId) {
-    throw new Error("Not allowed");
+    throw new AppError("Not allowed", 403);
   }
 
   if (withdrawal.status !== "PENDING") {
-    throw new Error("Cannot cancel processed withdrawal");
+    throw new AppError("Cannot cancel processed withdrawal", 400);
   }
 
   const updated = await prisma.withdrawal.update({
@@ -199,25 +192,26 @@ export const cancelWithdrawalService = async (
 
 export const lockWithdrawalService = async (
   withdrawalId: number,
-  operatorId: number
+  operatorId: number,
 ) => {
   const withdrawal = await prisma.withdrawal.findUnique({
     where: { id: withdrawalId },
   });
 
   if (!withdrawal) {
-    throw new Error("Withdrawal not found");
+    throw new AppError("Withdrawal not found", 404);
   }
 
   if (withdrawal.status !== "PENDING") {
-    throw new Error("Withdrawal already processed");
+    throw new AppError("Withdrawal already processed", 400);
   }
 
   // Agar lock bor bo‘lsa va 30 sekund o‘tmagan bo‘lsa
   if (withdrawal.lockedAt) {
     const diff = Date.now() - withdrawal.lockedAt.getTime();
+
     if (diff < 30000 && withdrawal.lockedBy !== operatorId) {
-      throw new Error("Withdrawal locked by another operator");
+      throw new AppError("Withdrawal locked by another operator", 409);
     }
   }
 

@@ -8,6 +8,9 @@ import {
 } from "./submission.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
 import { roleMiddleware } from "../../middlewares/role.middleware";
+import { validate } from "../../middlewares/validate.middleware";
+import { createSubmissionSchema } from "../../validators/submission.schema";
+import { criticalRateLimit } from "../../middlewares/rateLimit.middleware";
 
 const router = Router();
 
@@ -15,7 +18,9 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
+  criticalRateLimit,
   roleMiddleware("USER"),
+  validate(createSubmissionSchema),
   create
 );
 

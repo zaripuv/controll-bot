@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { AppError } from "../shared/appError";
 
 export const errorMiddleware = (
   err: any,
@@ -6,13 +7,18 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error("GLOBAL ERROR:", err);
 
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
 
-  res.status(statusCode).json({
+  console.error("UNEXPECTED ERROR:", err);
+
+  return res.status(500).json({
     success: false,
-    message
+    message: "Internal Server Error"
   });
 };
