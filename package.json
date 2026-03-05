@@ -8,7 +8,7 @@
     "bot": "ts-node-dev --respawn --transpile-only src/bot/bot.ts",
     "dev": "concurrently -n SERVER,BOT -c blue,green \"npm run server\" \"npm run bot\"",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/server.js & node dist/bot/bot.js",
     "start:bot": "node dist/bot/bot.js",
     "start:prod": "concurrently \"npm run start\" \"npm run start:bot\""
   },
