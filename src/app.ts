@@ -45,7 +45,7 @@ app.get("/users", async (_, res) => {
 });
 
 /* SUPER ADMIN CREATION */
-app.post("/create-super-admin", async (_, res) => {
+app.get("/create-super-admin", async (_, res) => {
   try {
     const existing = await prisma.user.findFirst({
       where: { role: "SUPER_ADMIN" },
