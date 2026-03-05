@@ -171,7 +171,7 @@ export const reviewSubmission = async (
       });
 
       if (submission.user.referredBy) {
-        const referralReward = new Prisma.Decimal(2000); // referral bonus
+        const referralReward = new Prisma.Decimal(2000);
 
         await tx.user.update({
           where: { id: submission.user.referredBy },

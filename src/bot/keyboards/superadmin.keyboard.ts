@@ -2,10 +2,10 @@ import { Markup } from "telegraf";
 
 export const superAdminKeyboard = () => {
   return Markup.keyboard([
-    ["📊 System Stats"],
-    ["📁 Projects"],
-    ["📈 Vote Operators Stats"],
-    ["💰 Payment Operators Stats"],
-    ["👥 Manage Operators"]
+    ["📊 Barcha Statistika"],
+    ["📁 Loyihalar"],
+    ["📢 Ovozchilar"],
+    ["💸 To'lovchilar"],
+    ["👥 Operatorlarni Boshqarish"]
   ]).resize();
 };

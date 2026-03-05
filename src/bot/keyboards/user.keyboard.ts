@@ -2,10 +2,10 @@ import { Markup } from "telegraf";
 
 export const userKeyboard = () => {
   return Markup.keyboard([
-    ["📝 Submit"],
+    ["📢 Ovoz Berish"],
     ["💰 Balance"],
-    ["💳 Withdraw"],
-    ["👥 Invite Friends"],
-     ["📊 Referral Stats"]
+    ["💳 Pul Yechish"],
+    ["👥 Do'stlarni Taklif Qilish"],
+     ["📊 Mening Statistikam"]
   ]).resize();
 };

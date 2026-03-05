@@ -42,13 +42,13 @@ bot.start(async (ctx) => {
     ctx.session.token = data.accessToken;
     ctx.session.role = "USER";
 
-    await ctx.reply("✅ Tizimga xush kelibsiz!", userKeyboard());
+    await ctx.reply("✅ Telegram botga xush kelibsiz!", userKeyboard());
   } catch {
     await ctx.reply("❌ Auth xatolik");
   }
 });
 
-bot.hears("📊 Referral Stats", async (ctx) => {
+bot.hears("📊 Ulashish statistikasi", async (ctx) => {
   const { data } = await api.get("/users/referral-stats", {
     headers: {
       Authorization: `Bearer ${ctx.session.token}`,
@@ -64,12 +64,12 @@ bot.hears("📊 Referral Stats", async (ctx) => {
   );
 });
 
-bot.hears("📝 Submit", (ctx) => {
+bot.hears("🕊 Yuborish", (ctx) => {
   ctx.scene.enter("submit-scene");
 });
 
 // Withdraw bosilganda
-bot.hears("💳 Withdraw", (ctx) => {
+bot.hears("💳 To'lov", (ctx) => {
   ctx.scene.enter("withdrawal-scene");
 });
 

@@ -8,7 +8,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     await ctx.scene.enter("create-operator-scene");
   });
 
-  bot.hears("📊 System Stats", async (ctx: BotContext) => {
+  bot.hears("📊 Umumiy Statistika", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -21,29 +21,29 @@ export const registerSuperAdminHandlers = (bot: any) => {
       });
 
       await ctx.reply(
-        `📊 SYSTEM STATISTICS
+        `📊 UMUMIY STATISTIKA
 
-📝 SUBMISSIONS
-• Total: ${data.submissions.total}
-• Approved: ${data.submissions.approved}
-• Rejected: ${data.submissions.rejected}
+📝 KO'RSATKICHLAR
+• Jami: ${data.submissions.total}
+• Tasdiqlangan: ${data.submissions.approved}
+• Rad etilgan: ${data.submissions.rejected}
 • Expired: ${data.submissions.expired}
 
-💳 WITHDRAWALS
-• Total: ${data.withdrawals.total}
-• Paid: ${data.withdrawals.paid}
-• Cancelled: ${data.withdrawals.cancelled}
-• Total Paid Amount: ${data.withdrawals.totalPaidAmount}
+💳 To'lovlar
+• Jami: ${data.withdrawals.total}
+• To'lov qilingan: ${data.withdrawals.paid}
+• Bekor qilingan: ${data.withdrawals.cancelled}
+• Jami to'lov miqdori: ${data.withdrawals.totalPaidAmount}
 
 ━━━━━━━━━━━━━━━━━━`,
       );
     } catch (err) {
       console.log(err);
-      await ctx.reply("❌ Xatolik");
+      await ctx.reply("❌ Xatolik yuz berdi");
     }
   });
 
-  bot.hears("📈 Vote Operators Stats", async (ctx: BotContext) => {
+  bot.hears("📢 Ovozchilar Statistikasi", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -59,7 +59,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
         return ctx.reply("Operator yo‘q");
       }
 
-      let message = "📈 VOTE OPERATORS STATS\n\n";
+      let message = "📈 OVOZ OPERATOR STATISTIKASI\n\n";
 
       for (const op of data) {
         const approved = op.reviewedSubs.filter(
@@ -70,17 +70,17 @@ export const registerSuperAdminHandlers = (bot: any) => {
         ).length;
 
         message += `👤 ${op.username}\n`;
-        message += `   ✅ Approved: ${approved}\n`;
-        message += `   ❌ Rejected: ${rejected}\n\n`;
+        message += `   ✅ Tasdiqlangan: ${approved}\n`;
+        message += `   ❌ Rad etilgan: ${rejected}\n\n`;
       }
 
       await ctx.reply(message);
     } catch {
-      await ctx.reply("❌ Xatolik");
+      await ctx.reply("❌ Xatolik yuz berdi");
     }
   });
 
-  bot.hears("💰 Payment Operators Stats", async (ctx: BotContext) => {
+  bot.hears("💸 To'lovchilar Statistikasi", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -93,10 +93,10 @@ export const registerSuperAdminHandlers = (bot: any) => {
       });
 
       if (!data.length) {
-        return ctx.reply("Payment operator yo‘q");
+        return ctx.reply("To'lov operator yo‘q");
       }
 
-      let message = "💰 PAYMENT OPERATORS STATS\n\n";
+      let message = "💰 TO'LOV OPERATOR STATISTIKASI\n\n";
 
       for (const op of data) {
         const paid = op.processedWiths.filter(
@@ -108,13 +108,13 @@ export const registerSuperAdminHandlers = (bot: any) => {
           .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
 
         message += `👤 ${op.username}\n`;
-        message += `   💸 Paid Withdrawals: ${paid}\n`;
-        message += `   💰 Total Paid: ${totalPaid}\n\n`;
+        message += `   💸 To'lov qilingan: ${paid}\n`;
+        message += `   💰 Jami to'lov: ${totalPaid}\n\n`;
       }
 
       await ctx.reply(message);
     } catch {
-      await ctx.reply("❌ Xatolik");
+      await ctx.reply("❌ Xatolik yuz berdi");
     }
   });
 
@@ -126,8 +126,8 @@ export const registerSuperAdminHandlers = (bot: any) => {
     await ctx.reply(
       "Operator boshqaruvi:",
       Markup.inlineKeyboard([
-        [Markup.button.callback("➕ Add Operator", "add_operator")],
-        [Markup.button.callback("🗑 Delete Operator", "delete_operator")],
+        [Markup.button.callback("➕ Operator qo'shish", "add_operator")],
+        [Markup.button.callback("🗑 Operator o'chirish", "delete_operator")],
       ]),
     );
   });
@@ -154,13 +154,13 @@ export const registerSuperAdminHandlers = (bot: any) => {
         await ctx.reply(
           `👤 ${op.username}\nRole: ${op.role}`,
           Markup.inlineKeyboard([
-            [Markup.button.callback("🗑 Delete", `delete_operator_${op.id}`)],
+            [Markup.button.callback("🗑 O'chirish", `delete_operator_${op.id}`)],
           ]),
         );
       }
     } catch (err) {
       console.log(err);
-      await ctx.reply("❌ Xatolik");
+      await ctx.reply("❌ Xatolik yuz berdi");
     }
   });
 
@@ -180,7 +180,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     } catch (err) {
       console.log(err);
 
-      await ctx.answerCbQuery("Xatolik");
+      await ctx.answerCbQuery("❌ Xatolik yuz berdi");
     }
   });
 
@@ -189,16 +189,16 @@ export const registerSuperAdminHandlers = (bot: any) => {
     await ctx.scene.enter("create-project-scene");
   });
 
-  bot.hears("📁 Projects", async (ctx: BotContext) => {
+  bot.hears("📁 Loyihalar", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
 
     await ctx.reply(
-      "📁 Projects panel",
+      "📁 Loyihalar paneli",
       Markup.inlineKeyboard([
-        [Markup.button.callback("➕ Create Project", "create_project")],
-        [Markup.button.callback("📋 Project List", "project_list")],
+        [Markup.button.callback("➕ Loyiha yaratish", "create_project")],
+        [Markup.button.callback("📋 Loyihalar ro'yxati", "project_list")],
       ]),
     );
   });
@@ -220,24 +220,24 @@ export const registerSuperAdminHandlers = (bot: any) => {
       await ctx.reply(
         `📁 ${p.name}
 🔗 ${p.link}
-💰 Reward: ${p.reward}
+💰 Mukofot summasi: ${p.reward}
 
-👨‍💼 Vote operator: ${p.voteOperator?.username || "—"}
-💳 Payment operator: ${p.paymentOperator?.username || "—"}`,
+👨‍💼 Ovoz operator: ${p.voteOperator?.username || "—"}
+💳 To'lov operator: ${p.paymentOperator?.username || "—"}`,
         Markup.inlineKeyboard([
           [
             Markup.button.callback(
-              "👨‍💼 Assign Vote Operator",
+              "👨‍💼 Ovoz Operator Biriktirish",
               `assign_vote_${p.id}`,
             ),
           ],
           [
             Markup.button.callback(
-              "💳 Assign Payment Operator",
+              "💳 To'lov Operator Biriktirish",
               `assign_pay_${p.id}`,
             ),
           ],
-          [Markup.button.callback("📊 Stats", `project_stats_${p.id}`)],
+          [Markup.button.callback("📊 Statistika", `project_stats_${p.id}`)],
         ]),
       );
     }
@@ -264,7 +264,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     });
 
     await ctx.reply(
-      "👨‍💼 Vote operatorni tanlang:",
+      "👨‍💼 Ovoz operatorni tanlang:",
       Markup.inlineKeyboard(buttons),
     );
   });
@@ -290,7 +290,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     });
 
     await ctx.reply(
-      "💳 Payment operatorni tanlang:",
+      "💳 To'lov operatorni tanlang:",
       Markup.inlineKeyboard(buttons),
     );
   });
@@ -311,11 +311,11 @@ export const registerSuperAdminHandlers = (bot: any) => {
       },
     );
 
-    await ctx.answerCbQuery("Vote operator biriktirildi");
+    await ctx.answerCbQuery("Ovoz operator biriktirildi");
     await ctx.reply(
-      "📁 Project yangilandi",
+      "📁 Loyiha yangilandi",
       Markup.inlineKeyboard([
-        [Markup.button.callback("📋 Project List", "project_list")],
+        [Markup.button.callback("📋 Loyihalar ro'yxati", "project_list")],
       ]),
     );
   });
@@ -336,11 +336,11 @@ export const registerSuperAdminHandlers = (bot: any) => {
       },
     );
 
-    await ctx.answerCbQuery("Payment operator biriktirildi");
+    await ctx.answerCbQuery("To'lov operator biriktirildi");
     await ctx.reply(
-      "📁 Project yangilandi",
+      "📁 Loyiha yangilandi",
       Markup.inlineKeyboard([
-        [Markup.button.callback("📋 Project List", "project_list")],
+        [Markup.button.callback("📋 Loyihalar ro'yxati", "project_list")],
       ]),
     );
   });
@@ -355,17 +355,17 @@ export const registerSuperAdminHandlers = (bot: any) => {
     });
 
     await ctx.reply(
-      `📊 PROJECT STATS
+      `📊 LOYIHA STATISTIKASI
 
-📝 Submissions
-• Total: ${data.submissions.total}
-• Approved: ${data.submissions.approved}
-• Rejected: ${data.submissions.rejected}
-• Expired: ${data.submissions.expired}
+📝 Ovozlar
+• Jami: ${data.submissions.total}
+• Tasdiqlangan: ${data.submissions.approved}
+• Rad etilgan: ${data.submissions.rejected}
+• Muddati o'tgan: ${data.submissions.expired}
 
-💰 Withdrawals
-• Paid: ${data.withdrawals.paid}
-• Total paid: ${data.withdrawals.totalPaidAmount}`,
+💰 To'lovlar
+• To'lov qilingan: ${data.withdrawals.paid}
+• Jami to'lov: ${data.withdrawals.totalPaidAmount}`,
     );
   });
 };

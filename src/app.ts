@@ -34,7 +34,7 @@ app.get("/health", (_, res) => {
   res.json({ status: "OK" });
 });
 
-/* USERS (keyinchalik alohida modulga o'tadi) */
+/* USERS */
 app.get("/users", async (_, res) => {
   try {
     const users = await prisma.user.findMany();

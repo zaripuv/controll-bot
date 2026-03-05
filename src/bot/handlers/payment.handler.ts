@@ -4,7 +4,7 @@ import { api } from "../api";
 
 export const registerPaymentHandlers = (bot: any) => {
   // Pending withdrawals ro‘yxati
-  bot.hears("💰 Pending withdrawals", async (ctx: BotContext) => {
+  bot.hears("💰 Kutilayotgan to'lovlar", async (ctx: BotContext) => {
     if (ctx.session.role !== "PAYMENT_OPERATOR") {
       return ctx.reply("❌ Sizda ruxsat yo‘q");
     }
@@ -17,14 +17,14 @@ export const registerPaymentHandlers = (bot: any) => {
       });
 
       if (!data.length) {
-        return ctx.reply("📭 Pending withdrawal yo‘q");
+        return ctx.reply("📭 Kutilayotgan to'lovlar yo‘q");
       }
 
       for (const w of data) {
         await ctx.reply(
           `👤 ${w.user?.username || "User"}\n💳 ${w.cardNumber}\n💰 ${w.amount}`,
           Markup.inlineKeyboard([
-            [Markup.button.callback("✅ Pay", `pay_${w.id}`)],
+            [Markup.button.callback("✅ To'lov qilish", `pay_${w.id}`)],
           ]),
         );
       }
@@ -64,7 +64,7 @@ export const registerPaymentHandlers = (bot: any) => {
       if (data.telegramId) {
         await ctx.telegram.sendMessage(
           data.telegramId,
-          `💸 Kartangizga ${data.amount} so‘m to‘lov amalga oshirildi.\n✅ To‘lov muvaffaqiyatli yakunlandi.`,
+          `💸 Kartangizga ${data.amount} so‘m to‘lov amalga oshirildi, kartangizni tekshirib ko'rishingiz mumkin.\n✅ To‘lov muvaffaqiyatli yakunlandi.`,
         );
       }
 
@@ -72,7 +72,7 @@ export const registerPaymentHandlers = (bot: any) => {
       await ctx.editMessageText("💸 To‘lov bajarildi");
     } catch (err: any) {
       console.log(err.response?.data || err.message);
-      await ctx.answerCbQuery("Xatolik");
+      await ctx.answerCbQuery("❌ Xatolik yuz berdi");
     }
   });
 };

@@ -4,7 +4,7 @@ import { api } from "../api";
 
 export const registerOperatorHandlers = (bot: any) => {
 
-  bot.hears("📋 Pending submissions", async (ctx: BotContext) => {
+  bot.hears("📋 Kutilayotgan ovozlar", async (ctx: BotContext) => {
 
     if (ctx.session.role !== "VOTE_OPERATOR") {
       return ctx.reply("❌ Sizda ruxsat yo‘q");
@@ -18,7 +18,7 @@ export const registerOperatorHandlers = (bot: any) => {
       });
 
       if (!data.length) {
-        return ctx.reply("📭 Pending submission yo‘q");
+        return ctx.reply("📭 Kutilayotgan ovozlar yo‘q");
       }
 
       for (const sub of data) {
@@ -26,7 +26,7 @@ export const registerOperatorHandlers = (bot: any) => {
         // Agar SMS hali kelmagan bo‘lsa
         if (!sub.smsCode) {
           await ctx.reply(
-            `📞 ${sub.phone}\n⏳ SMS kutilmoqda`
+            `📞 ${sub.phone}\n⏳ SMS kutilmoqda...`
           );
           continue;
         }
@@ -36,8 +36,8 @@ export const registerOperatorHandlers = (bot: any) => {
           `📞 ${sub.phone}\n🔐 ${sub.smsCode}`,
           Markup.inlineKeyboard([
             [
-              Markup.button.callback("✅ Approve", `approve_${sub.id}`),
-              Markup.button.callback("❌ Reject", `reject_${sub.id}`),
+              Markup.button.callback("✅ Tasdiqlash", `approve_${sub.id}`),
+              Markup.button.callback("❌ Rad etish", `reject_${sub.id}`),
             ],
           ])
         );
@@ -67,16 +67,16 @@ export const registerOperatorHandlers = (bot: any) => {
       if (data.telegramId) {
         await ctx.telegram.sendMessage(
           data.telegramId.toString(),
-          `🎉 Sizning ovozingiz tasdiqlandi!\n💰 Bonus balansingizga qo‘shildi.`
+          `🎉 Sizning ovozingiz tasdiqlandi!\n💰 Bonus balansingizga qo‘shildi teshkirib ko'rishingiz mumkin.`
         );
       }
 
-      await ctx.answerCbQuery("Approved ✅");
+      await ctx.answerCbQuery("✅ Tasdiqlandi");
       await ctx.editMessageText("✅ Tasdiqlandi");
 
     } catch (err: any) {
       console.log(err.response?.data || err.message);
-      await ctx.answerCbQuery("Xatolik");
+      await ctx.answerCbQuery("Xatolik yuz berdi");
     }
   });
 
@@ -102,12 +102,12 @@ export const registerOperatorHandlers = (bot: any) => {
         );
       }
 
-      await ctx.answerCbQuery("Rejected ❌");
+      await ctx.answerCbQuery("❌ Rad etildi");
       await ctx.editMessageText("❌ Rad etildi");
 
     } catch (err: any) {
       console.log(err.response?.data || err.message);
-      await ctx.answerCbQuery("Xatolik");
+      await ctx.answerCbQuery("❌ Xatolik yuz berdi");
     }
   });
 
