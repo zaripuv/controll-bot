@@ -8,7 +8,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     await ctx.scene.enter("create-operator-scene");
   });
 
-  bot.hears("📊 Umumiy Statistika", async (ctx: BotContext) => {
+  bot.hears("📊 Barcha Statistika", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -43,7 +43,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     }
   });
 
-  bot.hears("📢 Ovozchilar Statistikasi", async (ctx: BotContext) => {
+  bot.hears("📢 Ovozchilar", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -80,7 +80,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     }
   });
 
-  bot.hears("💸 To'lovchilar Statistikasi", async (ctx: BotContext) => {
+  bot.hears("💸 To'lovchilar", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }
@@ -118,7 +118,7 @@ export const registerSuperAdminHandlers = (bot: any) => {
     }
   });
 
-  bot.hears("👥 Manage Operators", async (ctx: BotContext) => {
+  bot.hears("👥 Operatorlarni Boshqarish", async (ctx: BotContext) => {
     if (ctx.session.role !== "SUPER_ADMIN") {
       return ctx.reply("❌ Ruxsat yo‘q");
     }

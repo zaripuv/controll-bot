@@ -2,7 +2,7 @@ import { BotContext } from "../../types";
 import { api } from "../api";
 
 export const registerUserHandlers = (bot: any) => {
-  bot.hears("👥 Invite Friends", async (ctx: BotContext) => {
+  bot.hears("👥 Do'stlarni Taklif Qilish", async (ctx: BotContext) => {
     const { data } = await api.get("/users/referral", {
       headers: {
         Authorization: `Bearer ${ctx.session.token}`,

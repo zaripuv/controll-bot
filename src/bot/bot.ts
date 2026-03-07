@@ -48,7 +48,7 @@ bot.start(async (ctx) => {
   }
 });
 
-bot.hears("📊 Ulashish statistikasi", async (ctx) => {
+bot.hears("📊 Mening Statistikam", async (ctx) => {
   const { data } = await api.get("/users/referral-stats", {
     headers: {
       Authorization: `Bearer ${ctx.session.token}`,
@@ -56,7 +56,7 @@ bot.hears("📊 Ulashish statistikasi", async (ctx) => {
   });
 
   await ctx.reply(
-    `📊 Sizning referral statistikangiz
+    `📊 Sizning statistikangiz
 
 👥 Taklif qilganlar: ${data.totalReferrals}
 
@@ -64,12 +64,12 @@ bot.hears("📊 Ulashish statistikasi", async (ctx) => {
   );
 });
 
-bot.hears("🕊 Yuborish", (ctx) => {
+bot.hears("📢 Ovoz Berish", (ctx) => {
   ctx.scene.enter("submit-scene");
 });
 
 // Withdraw bosilganda
-bot.hears("💳 To'lov", (ctx) => {
+bot.hears("💳 Pul Yechish", (ctx) => {
   ctx.scene.enter("withdrawal-scene");
 });
 

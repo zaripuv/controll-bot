@@ -4,7 +4,7 @@ import { api } from "../api";
 
 export const registerPaymentHandlers = (bot: any) => {
   // Pending withdrawals ro‘yxati
-  bot.hears("💰 Kutilayotgan to'lovlar", async (ctx: BotContext) => {
+  bot.hears("Boshlash", async (ctx: BotContext) => {
     if (ctx.session.role !== "PAYMENT_OPERATOR") {
       return ctx.reply("❌ Sizda ruxsat yo‘q");
     }

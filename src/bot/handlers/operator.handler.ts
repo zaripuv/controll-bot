@@ -4,7 +4,7 @@ import { api } from "../api";
 
 export const registerOperatorHandlers = (bot: any) => {
 
-  bot.hears("📋 Kutilayotgan ovozlar", async (ctx: BotContext) => {
+  bot.hears("Boshlash", async (ctx: BotContext) => {
 
     if (ctx.session.role !== "VOTE_OPERATOR") {
       return ctx.reply("❌ Sizda ruxsat yo‘q");
